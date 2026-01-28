@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لعبة XO الحديثة</title>
+<style>
+* {
+  box-sizing: border-box;
+  font-family: "Cairo", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+h1, h2 {
+  text-align: center;
+  color: #fff;
+}
+
+.screen {
+  flex: 1;
+  display: none;
+  padding: 20px;
+}
+
+.screen.active {
+  display: block;
+}
+
+.start-box, .game-box {
+  background: #ffffffdd;
+  max-width: 400px;
+  margin: auto;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+input, select, button {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+button {
+  background: #4facfe;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #00c6ff;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 20px auto;
+  max-width: 300px;
+}
+
+.cell {
+  background: #4facfe;
+  color: white;
+  font-size: 40px;
+  text-align: center;
+  line-height: 90px;
+  height: 90px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.cell:hover {
+  background: #00c6ff;
+}
+
+.info {
+  text-align: center;
+  font-size: 18px;
+  margin-top: 10px;
+}
+
+/* Footer */
+footer {
+  background: #000000cc;
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<h1>🎮 لعبة XO الحديثة</h1>
+
+<div id="startScreen" class="screen active">
+  <div class="start-box">
+    <h2>ابدأ اللعبة</h2>
+
+    <label>اختر نمط اللعب:</label>
+    <select id="mode">
+      <option value="1">لاعب واحد (ضد الكمبيوتر)</option>
+      <option value="2">لاعبان</option>
+    </select>
+
+    <input type="text" id="player1" placeholder="اسم اللاعب الأول">
+    <input type="text" id="player2" placeholder="اسم اللاعب الثاني (اختياري)">
+
+    <button onclick="startGame()">ابدأ اللعب</button>
+  </div>
+</div>
+
+<div id="gameScreen" class="screen">
+  <div class="game-box">
+    <h2 id="playersTitle"></h2>
+
+    <div class="board" id="board"></div>
+
+    <div class="info" id="infoText"></div>
+
+    <button onclick="resetGame()">إعادة اللعب</button>
+  </div>
+</div>
+
+<footer>
+  <div>اسم الطالب: ZYAD MOHAMMAD MISHKHAS ALLUQMANI (زياد محمد مشخص اللقماني)</div>
+  <div>الرقم الجامعي: 44610403</div>
+  <div>بإشراف: Mohammed Ahmed Jabali</div>
+</footer>
+
+<script>
+let board = ["", "", "", "", "", "", "", "", ""];
+let currentPlayer = "X";
+let gameActive = true;
+let mode = 1;
+let player1Name = "";
+let player2Name = "الكمبيوتر";
+
+const winConditions = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+const startScreen = document.getElementById("startScreen");
+const gameScreen = document.getElementById("gameScreen");
+const boardDiv = document.getElementById("board");
+const infoText = document.getElementById("infoText");
+const playersTitle = document.getElementById("playersTitle");
+
+function startGame() {
+  mode = document.getElementById("mode").value;
+  player1Name = document.getElementById("player1").value || "اللاعب 1";
+  player2Name = document.getElementById("player2").value || (mode == 2 ? "اللاعب 2" : "الكمبيوتر");
+
+  startScreen.classList.remove("active");
+  gameScreen.classList.add("active");
+
+  playersTitle.textContent = player1Name + " ❌ VS " + player2Name + " ⭕";
+  initBoard();
+}
+
+function initBoard() {
+  boardDiv.innerHTML = "";
+  board = ["", "", "", "", "", "", "", "", ""];
+  currentPlayer = "X";
+  gameActive = true;
+  infoText.textContent = "دور: " + player1Name;
+
+  board.forEach((cell, index) => {
+    const cellDiv = document.createElement("div");
+    cellDiv.classList.add("cell");
+    cellDiv.addEventListener("click", () => handleCellClick(index));
+    boardDiv.appendChild(cellDiv);
+  });
+}
+
+function handleCellClick(index) {
+  if (board[index] !== "" || !gameActive) return;
+
+  board[index] = currentPlayer;
+  boardDiv.children[index].textContent = currentPlayer;
+
+  if (checkWin()) {
+    infoText.textContent = "🎉 الفائز: " + (currentPlayer === "X" ? player1Name : player2Name);
+    gameActive = false;
+    return;
+  }
+
+  if (!board.includes("")) {
+    infoText.textContent = "😐 تعادل!";
+    gameActive = false;
+    return;
+  }
+
+  currentPlayer = currentPlayer === "X" ? "O" : "X";
+  infoText.textContent = "دور: " + (currentPlayer === "X" ? player1Name : player2Name);
+
+  if (mode == 1 && currentPlayer === "O") {
+    setTimeout(computerMove, 500);
+  }
+}
+
+function computerMove() {
+  let emptyCells = board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+  let randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+  handleCellClick(randomIndex);
+}
+
+function checkWin() {
+  return winConditions.some(condition => {
+    return condition.every(index => board[index] === currentPlayer);
+  });
+}
+
+function resetGame() {
+  initBoard();
+}
+</script>
+
+</body>
+</html>
